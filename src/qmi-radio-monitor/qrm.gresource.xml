@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/freedesktop/qrm">
+    <file preprocess="xml-stripblanks">qrm-window.ui</file>
+    <file preprocess="xml-stripblanks">qrm-signal-tab.ui</file>
+    <file preprocess="xml-stripblanks">qrm-power-tab.ui</file>
+  </gresource>
+</gresources>

@@ -55,6 +55,13 @@ Makefile.in
 
 /src/qmi-firmware-update/qmi-firmware-update
 
+/src/qmi-radio-monitor/data/org.freedesktop.QmiRadioMonitor.pkexec.policy
+/src/qmi-radio-monitor/qmi-radio-monitor
+/src/qmi-radio-monitor/qrm-enum-types.*
+/src/qmi-radio-monitor/qrm-error-quarks.*
+/src/qmi-radio-monitor/qrm-error-types.*
+/src/qmi-radio-monitor/qrm-resources.*
+
 /build-aux/qmi-codegen/*.pyc
 
 /docs/reference/libqmi-glib/version.xml

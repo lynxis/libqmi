@@ -67,63 +67,87 @@ AC_SUBST(QMI_GLIB_LT_AGE)
 dnl Required dependency versions
 GLIB_VERSION=2.36
 GUDEV_VERSION=147
+GTK_VERSION=3.10
 
-dnl GLib, GIO...
-PKG_CHECK_MODULES(GLIB,
-                  glib-2.0 >= $GLIB_VERSION
-                  gobject-2.0
-                  gio-2.0
-                  gio-unix-2.0)
+PKG_CHECK_MODULES(GLIB, [glib-2.0 >= $GLIB_VERSION gobject-2.0 gio-2.0 gio-unix-2.0])
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
 
 GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`
 AC_SUBST(GLIB_MKENUMS)
 
+AC_PATH_PROG(GLIB_COMPILE_RESOURCES, [glib-compile-resources])
+AC_SUBST(GLIB_COMPILE_RESOURCES)
+
+PKG_CHECK_MODULES(GUDEV, [gudev-1.0 >= $GUDEV_VERSION], [have_gudev=yes], [have_gudev=no])
+AC_SUBST(GUDEV_CFLAGS)
+AC_SUBST(GUDEV_LIBS)
+
+PKG_CHECK_MODULES(GTK, [gtk+-3.0 >= $GTK_VERSION], [have_gtk=yes], [have_gtk=no])
+AC_SUBST(GTK_CFLAGS)
+AC_SUBST(GTK_LIBS)
+
+dnl udev support is optional for qmi-firmware-update and mandatory for qmi-radio-monitor, enabled by default
+AC_ARG_WITH(udev,
+            AS_HELP_STRING([--without-udev],
+                           [Build without udev support]),
+            [with_udev=no],
+            [with_udev=yes])
+if test "$with_udev" = "yes"; then
+    if test "$have_gudev" = "no"; then
+        AC_MSG_ERROR([Couldn't find gudev >= $GUDEV_VERSION. Install it, or otherwise configure using --without-udev to disable udev support.])
+    else
+        AC_DEFINE(WITH_UDEV, 1, [Define if you want udev support])
+    fi
+fi
+
 dnl qmi-firmware-update is optional, enabled by default
 AC_ARG_ENABLE([firmware-update],
-              AS_HELP_STRING([--enable-firmware-update],
-                             [enable compilation of `qmi-firmware-update' [default=yes]]),
-              [build_firmware_update=$enableval],
+              AS_HELP_STRING([--disable-firmware-update],
+                             [disable compilation of `qmi-firmware-update']),
+              [build_firmware_update=no],
               [build_firmware_update=yes])
-AM_CONDITIONAL([BUILD_FIRMWARE_UPDATE], [test "x$build_firmware_update" = "xyes"])
-
-dnl udev support is optional, enabled by default
-AC_ARG_WITH(udev, AS_HELP_STRING([--without-udev], [Build without udev support]), [], [with_udev=yes])
-case $with_udev in
-    yes)
-        if test "x$build_firmware_update" = "xyes"; then
-            PKG_CHECK_MODULES(GUDEV, [gudev-1.0 >= $GUDEV_VERSION], [have_gudev=yes],[have_gudev=no])
-            if test "x$have_gudev" = "xno"; then
-                AC_MSG_ERROR([Couldn't find gudev >= $GUDEV_VERSION. Install it, or otherwise configure using --without-udev to disable udev support.])
-            else
-                AC_DEFINE(WITH_UDEV, 1, [Define if you want udev support])
-                AC_SUBST(GUDEV_CFLAGS)
-                AC_SUBST(GUDEV_LIBS)
-            fi
-        else
-            with_udev="n/a"
-        fi
-        ;;
-    *)
-        with_udev=no
-        ;;
-esac
+if test "$build_firmware_update" = "yes"; then
+    if test "$with_udev" != "yes"; then
+        firmware_update_details="without udev"
+    fi
+fi
+AM_CONDITIONAL([BUILD_FIRMWARE_UPDATE], [test "$build_firmware_update" = "yes"])
 
 dnl runtime MM check is optional, enabled by default
-AC_ARG_ENABLE(mm-runtime-check, AS_HELP_STRING([--disable-mm-runtime-check], [Build without ModemManager runtime check]), [], [enable_mm_runtime_check=yes])
-case $enable_mm_runtime_check in
-    yes)
-        if test "x$build_firmware_update" = "xyes"; then
-            AC_DEFINE(MM_RUNTIME_CHECK_ENABLED, 1, [Define if you want ModemManager runtime check])
-        else
-            enable_mm_runtime_check="n/a"
+AC_ARG_ENABLE(mm-runtime-check,
+              AS_HELP_STRING([--disable-mm-runtime-check],
+                             [Build without ModemManager runtime check]),
+              [enable_mm_runtime_check=no],
+              [enable_mm_runtime_check=yes])
+if test "$build_firmware_update" = "yes"; then
+    if test "$enable_mm_runtime_check" = "yes"; then
+        AC_DEFINE(MM_RUNTIME_CHECK_ENABLED, 1, [Define if you want ModemManager runtime check])
+    else
+        if test -n "$firmware_update_details"; then
+            firmware_update_details="${firmware_update_details}, "
         fi
-        ;;
-    *)
-        enable_mm_runtime_check=no
-        ;;
-esac
+        firmware_update_details="${firmware_update_details}without MM runtime check"
+    fi
+fi
+
+dnl cleanup firmware update details information to show up later
+if test -n "$firmware_update_details"; then
+    firmware_update_details=" (${firmware_update_details})"
+fi
+
+dnl qmi-radio-monitor is optional, enabled by default
+AC_ARG_ENABLE([radio-monitor],
+              AS_HELP_STRING([--disable-radio-monitor],
+                             [disable compilation of `qmi-radio-monitor']),
+              [build_radio_monitor=no],
+              [build_radio_monitor=yes])
+if test "$build_radio_monitor" = "yes"; then
+    if test "$with_udev" != "yes"; then
+        AC_MSG_ERROR([Cannot build `qmi-radio-monitor' without udev support. Enable it, or otherwise configure using --disable-radio-monitor to skip building `qmi-radio-monitor'.])
+    fi
+fi
+AM_CONDITIONAL([BUILD_RADIO_MONITOR], [test "$build_radio_monitor" = "yes"])
 
 dnl Documentation
 GTK_DOC_CHECK(1.0)
@@ -199,6 +223,8 @@ AC_CONFIG_FILES([Makefile
                  src/qmi-proxy/Makefile
                  src/qmi-firmware-update/Makefile
                  src/qmi-firmware-update/test/Makefile
+                 src/qmi-radio-monitor/Makefile
+                 src/qmi-radio-monitor/data/Makefile
                  utils/Makefile
                  docs/Makefile
                  docs/reference/Makefile
@@ -213,7 +239,7 @@ fi
 AC_OUTPUT
 
 echo "
-    libqmi (libqmi-glib, qmicli) $VERSION
+    libqmi $VERSION
     ==============================================
 
     compiler:              ${CC}
@@ -227,7 +253,6 @@ echo "
     Built items:
       libqmi-glib:         yes
       qmicli:              yes
-      qmi-firmware-update: ${build_firmware_update}
-          with udev:             ${with_udev}
-          with MM runtime check: ${enable_mm_runtime_check}
+      qmi-firmware-update: ${build_firmware_update}${firmware_update_details}
+      qmi-radio-monitor:   ${build_radio_monitor}
 "

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+
+  <vendor>Aleksander Morgado</vendor>
+  <vendor_url>https://www.freedesktop.org/wiki/Software/libqmi/</vendor_url>
+
+  <action id="es.aleksander.MobileRadioMonitor.pkexec.run-mobile-radio-monitor">
+    <description>Run the QMI Radio Monitor</description>
+    <message>Authentication is required to run the QMI Radio Monitor (user=$(user), program=$(program), command_line=$(command_line))</message>
+    <icon_name>qmi-radio-monitor</icon_name>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_self_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@bindir@/qmi-radio-monitor</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">yes</annotate>
+  </action>
+
+</policyconfig>

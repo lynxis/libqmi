@@ -5,8 +5,9 @@ dnl The QMI version number
 m4_define([qmi_major_version], [1])
 m4_define([qmi_minor_version], [23])
 m4_define([qmi_micro_version], [1])
+m4_define([qmi_revision_version], [next-20190307-1])
 m4_define([qmi_version],
-          [qmi_major_version.qmi_minor_version.qmi_micro_version])
+          [qmi_major_version.qmi_minor_version.qmi_micro_version.qmi_revision_version])
 
 dnl libtool versioning for libqmi-glib (-version-info c:r:a)
 dnl    If the interface is unchanged, but the implementation has changed or

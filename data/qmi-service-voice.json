@@ -143,6 +143,60 @@
                                                                  "format" : "string" } ] } } ] },
 
     // *********************************************************************************
+    {  "name"    : "Originate USSD",
+       "type"    : "Message",
+       "service" : "VOICE",
+       "id"      : "0x003A",
+       "version" : "1.0",
+       "since"   : "1.14",
+       "input"   : [ { "name"          : "USSD",
+                       "id"            : "0x01",
+                       "type"          : "TLV",
+                       "since"         : "1.14",
+                       "format"        : "struct",
+                       "contents"      : [ { "name"    : "DCS",
+                                             "format"  : "guint8" },
+                                           { "name"               : "data",
+                                             "format"             : "array",
+                                             "size-prefix-format" : "guint8",
+                                             "array-element"      : { "format" : "guint8" } } ]
+                     } ],
+       "output"  : [ { "common-ref" : "Operation Result" } ]
+    },
+
+    // *********************************************************************************
+    {  "name"    : "Answer USSD",
+       "type"    : "Message",
+       "service" : "VOICE",
+       "id"      : "0x003B",
+       "version" : "1.0",
+       "since"   : "1.14",
+       "input"   : [ { "name"          : "USSD",
+                       "id"            : "0x01",
+                       "type"          : "TLV",
+                       "since"         : "1.14",
+                       "format"        : "struct",
+                       "contents"      : [ { "name"    : "DCS",
+                                             "format"  : "guint8" },
+                                           { "name"               : "data",
+                                             "format"             : "array",
+                                             "size-prefix-format" : "guint8",
+                                             "array-element"      : { "format" : "guint8" } } ]
+                     } ],
+       "output"  : [ { "common-ref" : "Operation Result" } ]
+    },
+
+    // *********************************************************************************
+    {  "name"    : "Cancel USSD",
+       "type"    : "Message",
+       "service" : "VOICE",
+       "id"      : "0x003C",
+       "version" : "1.0",
+       "since"   : "1.14",
+       "input"   : [ ],
+       "output"  : [ { "common-ref" : "Operation Result" } ] },
+
+    // *********************************************************************************
     {  "name"    : "Get Config",
        "type"    : "Message",
        "service" : "VOICE",
@@ -275,6 +329,26 @@
                        "type"          : "TLV",
                        "since"         : "1.14",
                        "format"        : "guint8",
-                       "public-format" : "QmiVoiceDomain" } ] }
+                       "public-format" : "QmiVoiceDomain" } ] },
 
+    // *********************************************************************************
+    {  "name"    : "Original USSD Async",
+       "type"    : "Message",
+       "service" : "VOICE",
+       "id"      : "0x0043",
+       "version" : "1.0",
+       "since"   : "1.14",
+       "input"   : [ { "name"          : "USSD",
+                       "id"            : "0x01",
+                       "type"          : "TLV",
+                       "since"         : "1.14",
+                       "format"        : "struct",
+                       "contents"      : [ { "name"    : "DCS",
+                                             "format"  : "guint8" },
+                                           { "name"               : "data",
+                                             "format"             : "array",
+                                             "size-prefix-format" : "guint8",
+                                             "array-element"      : { "format" : "guint8" } } ]
+                     } ],
+       "output"  : [ { "common-ref" : "Operation Result" } ] }
 ]

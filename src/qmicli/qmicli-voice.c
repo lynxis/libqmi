@@ -45,6 +45,7 @@ static Context *ctx;
 static gboolean get_config_flag;
 static gboolean get_supported_messages_flag;
 static gboolean noop_flag;
+static gchar *send_ussd;
 
 static GOptionEntry entries[] = {
     { "voice-get-config", 0, 0, G_OPTION_ARG_NONE, &get_config_flag,
@@ -57,6 +58,10 @@ static GOptionEntry entries[] = {
     },
     { "voice-noop", 0, 0, G_OPTION_ARG_NONE, &noop_flag,
       "Just allocate or release a VOICE client. Use with `--client-no-release-cid' and/or `--client-cid'",
+      NULL
+    },
+    { "voice-ussd", 0, 0, G_OPTION_ARG_STRING, &send_ussd,
+      "Request a UUSD code",
       NULL
     },
     { NULL }
@@ -297,6 +302,56 @@ noop_cb (gpointer unused)
     return FALSE;
 }
 
+static QmiMessageVoiceOriginateUssdInput *
+set_ussd_input (const gchar *str)
+{
+    GError *error = NULL;
+    QmiMessageVoiceOriginateUssdInput *input = NULL;
+    QmiMessageVoiceOriginateUssdInputUssd *ussd = g_slice_new (QmiMessageVoiceOriginateUssdInputUssd);
+    ussd->data = g_array_sized_new (FALSE, FALSE, sizeof (guint8), strlen(str) );
+    ussd->dcs = 0;
+
+    input = qmi_message_voice_originate_ussd_input_new ();
+    if (!qmi_message_voice_originate_ussd_input_set_ussd (input, ussd, &error)) {
+        g_printerr ("error: couldn't create input data bundle: '%s'\n", error->message);
+        g_error_free (error);
+        qmi_message_voice_originate_ussd_input_unref (input);
+        input = NULL;
+    }
+
+    return input;
+}
+
+static void
+get_ussd_result (QmiClientVoice *client,
+                              GAsyncResult *res)
+{
+    QmiMessageVoiceOriginateUssdOutput *output;
+    GError *error = NULL;
+
+    output = qmi_client_voice_originate_ussd_finish (client, res, &error);
+    if (!output) {
+        g_printerr ("error: operation failed: %s\n", error->message);
+        g_error_free (error);
+        operation_shutdown (FALSE);
+        return;
+    }
+
+    if (!qmi_message_voice_originate_ussd_output_get_result (output, &error)) {
+        g_printerr ("error: couldn't get ussd messages: %s\n", error->message);
+        g_error_free (error);
+        qmi_message_voice_originate_ussd_output_unref (output);
+        operation_shutdown (FALSE);
+        return;
+    }
+
+    g_print ("[%s] Successfully sent ussd messages:\n",
+             qmi_device_get_path_display (ctx->device));
+
+    qmi_message_voice_originate_ussd_output_unref (output);
+    operation_shutdown (TRUE);
+}
+
 void
 qmicli_voice_run (QmiDevice *device,
                   QmiClientVoice *client,
@@ -333,6 +388,19 @@ qmicli_voice_run (QmiDevice *device,
                                      (GAsyncReadyCallback)get_config_ready,
                                      NULL);
         qmi_message_voice_get_config_input_unref (input);
+        return;
+    }
+
+    if (send_ussd) {
+        QmiMessageVoiceOriginateUssdInput *input;
+        input = set_ussd_input (send_ussd);
+
+        qmi_client_voice_originate_ussd (ctx->client,
+                                         input,
+                                         10,
+                                         ctx->cancellable,
+                                         (GAsyncReadyCallback) get_ussd_result,
+                                         NULL);
         return;
     }
 
